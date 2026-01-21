@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+!DOCTYPE html>
 <html>
 <head>
     <title>Funtezt Learning Game</title>
@@ -89,7 +89,7 @@
         
         h1 {
             color: #2c3e50;
-            margin-bottom: 20px;
+            margin-bottom: 30px;
         }
         
         .rules-box {
@@ -154,7 +154,6 @@
             font-size: 18px;
         }
         
-        /* AD CONTAINER - ALWAYS VISIBLE */
         .ad-container {
             margin: 15px auto 25px;
             text-align: center;
@@ -163,7 +162,6 @@
             padding: 15px;
             border: 2px solid rgba(255,255,255,0.3);
             max-width: 500px;
-            animation: fadeIn 0.5s ease-in;
             position: relative;
         }
         
@@ -182,47 +180,6 @@
             text-align: center;
             font-style: italic;
         }
-        
-        .ad-count {
-            font-size: 11px;
-            color: #7f8c8d;
-            margin-top: 5px;
-            text-align: center;
-        }
-        
-        /* Animation for ad */
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        /* Close button for ad */
-        .close-ad-btn {
-            position: absolute;
-            top: 5px;
-            right: 10px;
-            background: none;
-            border: none;
-            color: #95a5a6;
-            font-size: 20px;
-            cursor: pointer;
-            padding: 0;
-            width: 20px;
-            height: 20px;
-            line-height: 20px;
-        }
-        
-        .close-ad-btn:hover {
-            color: #e74c3c;
-        }
-        
-        /* Page refresh indicator */
-        .refresh-note {
-            font-size: 12px;
-            color: #95a5a6;
-            margin-top: 5px;
-            text-align: center;
-        }
     </style>
 </head>
 <body>
@@ -240,12 +197,9 @@
             Welcome back, <span id="userName"></span>! Ready to play?
         </div>
         
-        <!-- AD - HAR BAAR SHOW HOGA -->
+        <!-- AD -->
         <div class="ad-label">Advertisement</div>
-        <div class="ad-container" id="mainAd">
-            <!-- Close button -->
-            <button class="close-ad-btn" onclick="hideAd()" title="Hide ad">×</button>
-            
+        <div class="ad-container">
             <!-- Google AdSense Ad -->
             <ins class="adsbygoogle"
                  style="display:block"
@@ -260,15 +214,6 @@
             <div class="support-message">
                 <small>This ad helps keep Funtezt free for everyone. Thank you! ❤️</small>
             </div>
-            
-            <!-- Ad view counter -->
-            <div class="ad-count" id="adCounter">
-                <!-- Will show ad count -->
-            </div>
-            
-            <div class="refresh-note">
-                <small>Ad refreshes every 30 minutes</small>
-            </div>
         </div>
         
         <div class="rules-box">
@@ -279,49 +224,41 @@
         </div>
         
         <div id="gameOptions">
-            <button class="option" onclick="openCamera()">📸 Open Camera</button>
-            <button class="option" onclick="openGallery()">🖼️ Select from Gallery</button>
-            <button class="option" onclick="showLeaderboard()">🏆 Check Leaderboard</button>
-        </div>
-        
-        <!-- Small note about ads -->
-        <div style="margin-top: 30px; font-size: 14px; color: #7f8c8d; text-align: center;">
-            <p>🎯 <strong>Note:</strong> One ad view per visit helps us improve!</p>
+            <button class="option" id="cameraBtn">📸 Open Camera</button>
+            <button class="option" id="galleryBtn">🖼️ Select from Gallery</button>
+            <button class="option" id="leaderboardBtn">🏆 Check Leaderboard</button>
         </div>
     </div>
 
     <script>
-        // ========== AD MANAGEMENT ==========
-        // Track ad views PER SESSION
-        let sessionAdViews = localStorage.getItem('sessionAdViews') || 0;
-        sessionAdViews++;
-        localStorage.setItem('sessionAdViews', sessionAdViews);
+        // ========== FIXED BUTTON FUNCTIONS ==========
         
-        // Track TOTAL ad views (across all time)
-        let totalAdViews = localStorage.getItem('totalAdViews') || 0;
-        totalAdViews++;
-        localStorage.setItem('totalAdViews', totalAdViews);
+        // DIRECT BUTTON CLICK HANDLERS
+        document.getElementById('cameraBtn').onclick = function() {
+            const user = localStorage.getItem('currentUser');
+            if (!user) {
+                alert('Please login first!');
+                window.location.href = 'login.html';
+                return;
+            }
+            window.location.href = 'camera.html';
+        };
         
-        // Show ad view count
-        document.getElementById('adCounter').innerHTML = 
-            <small>Ad view #${sessionAdViews} this session | Total: ${totalAdViews}</small>;
+        document.getElementById('galleryBtn').onclick = function() {
+            const user = localStorage.getItem('currentUser');
+            if (!user) {
+                alert('Please login first!');
+                window.location.href = 'login.html';
+                return;
+            }
+            window.location.href = 'gallery.html';
+        };
         
-        // Function to hide ad
-        function hideAd() {
-            document.getElementById('mainAd').style.display = 'none';
-            // Show message
-            alert('Ad hidden for this session. Refresh page to see it again.');
-        }
-        
-        // Auto refresh ad every 30 minutes
-        setInterval(() => {
-            // Refresh AdSense ad
-            (adsbygoogle = window.adsbygoogle || []).push({});
-            console.log('Ad refreshed automatically');
-        }, 30 * 60 * 1000); // 30 minutes
+        document.getElementById('leaderboardBtn').onclick = function() {
+            window.location.href = 'leaderboard.html';
+        };
         
         // ========== AUTHENTICATION ==========
-        // Check authentication status
         function checkAuthStatus() {
             const user = localStorage.getItem('currentUser');
             const authSection = document.getElementById('authSection');
@@ -362,78 +299,23 @@
                 // Disable game options
                 gameOptions.style.opacity = '0.5';
                 gameOptions.style.pointerEvents = 'none';
-                
-                // Add click handler to show login alert
-                const options = document.querySelectorAll('.option');
-                options.forEach(option => {
-                    option.onclick = function() {
-                        alert('Please login first to use this feature!');
-                        window.location.href = 'login.html';
-                    };
-                });
             }
-        }
-        
-        // Navigation functions
-        function openCamera() {
-            const user = localStorage.getItem('currentUser');
-            if (!user) {
-                alert('Please login first!');
-                window.location.href = 'login.html';
-                return;
-            }
-            window.location.href = "camera.html";
-        }
-        
-        function openGallery() {
-            const user = localStorage.getItem('currentUser');
-            if (!user) {
-                alert('Please login first!');
-                window.location.href = 'login.html';
-                return;
-            }
-            window.location.href = "gallery.html";
-        }
-        
-        function showLeaderboard() {
-            window.location.href = "leaderboard.html";
         }
         
         // Logout function
         function logout() {
-            localStorage.removeItem('currentUser');
-            localStorage.removeItem('sessionAdViews'); // Clear session
-            alert('Logged out successfully!');
-            checkAuthStatus();
-            window.location.href = 'index.html';
+            if (confirm('Are you sure you want to logout?')) {
+                localStorage.removeItem('currentUser');
+                alert('Logged out successfully!');
+                checkAuthStatus();
+                window.location.reload();
+            }
         }
         
         // Check on page load
         window.onload = function() {
             checkAuthStatus();
-            
-            // Reset session counter at midnight (optional)
-            const now = new Date();
-            const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
-            const timeToMidnight = midnight.getTime() - now.getTime();
-            
-            setTimeout(() => {
-                localStorage.removeItem('sessionAdViews');
-                console.log('Daily ad counter reset');
-            }, timeToMidnight);
         };
-        
-        // Detect page refresh
-        window.onbeforeunload = function() {
-            // Save that user is refreshing
-            localStorage.setItem('refreshing', 'true');
-        };
-        
-        // When page loads, check if it was a refresh
-        if (localStorage.getItem('refreshing') === 'true') {
-            console.log('Page was refreshed');
-            localStorage.removeItem('refreshing');
-        }
     </script>
 </body>
 </html>
