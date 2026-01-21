@@ -97,10 +97,6 @@
             resize: vertical;
         }
         
-        textarea::placeholder {
-            color: rgba(255, 255, 255, 0.6);
-        }
-        
         .submit-btn {
             padding: 15px 40px;
             font-size: 20px;
@@ -113,11 +109,6 @@
             transition: all 0.3s;
             display: block;
             margin: 20px auto;
-        }
-        
-        .submit-btn:hover {
-            background: #27ae60;
-            transform: scale(1.05);
         }
         
         .score-display {
@@ -151,22 +142,6 @@
             display: inline-block;
             margin-bottom: 10px;
         }
-        
-        .error-message {
-            background: rgba(231, 76, 60, 0.9);
-            color: white;
-            padding: 30px;
-            border-radius: 10px;
-            text-align: center;
-            margin: 100px auto;
-            max-width: 500px;
-        }
-        
-        .error-message a {
-            color: white;
-            text-decoration: underline;
-            font-weight: bold;
-        }
     </style>
 </head>
 <body>
@@ -184,16 +159,12 @@
         <div id="mcqSection" style="display:none;">
             <div class="quiz-type-badge">MCQ Quiz</div>
             <div class="question-box">
-                <h3>Sample MCQ Question:</h3>
-                <p id="question">What is the capital of France?</p>
-                <p><small>Choose the correct answer:</small></p>
+                <h3>Question:</h3>
+                <p id="question">Loading question...</p>
             </div>
             
             <div id="options">
-                <button class="mcq-option" onclick="selectAnswer('A', 5)">A. Paris</button>
-                <button class="mcq-option" onclick="selectAnswer('B', 15)">B. London</button>
-                <button class="mcq-option" onclick="selectAnswer('C', 25)">C. Berlin</button>
-                <button class="mcq-option" onclick="selectAnswer('D', 35)">D. Madrid</button>
+                <!-- Options will be loaded here -->
             </div>
             
             <div id="mcqResult" style="display:none; text-align: center;">
@@ -206,8 +177,8 @@
         <div id="qaSection" style="display:none;">
             <div class="quiz-type-badge">Question & Answer</div>
             <div class="question-box">
-                <h3>Sample Question:</h3>
-                <p id="qaQuestion">Explain the process of photosynthesis in detail.</p>
+                <h3>Question:</h3>
+                <p id="qaQuestion">Loading question...</p>
                 <p><small>Write your answer (minimum 40 words):</small></p>
             </div>
             
@@ -224,23 +195,120 @@
     </div>
 
     <script>
-        // Security check - must be logged in
+        // ========== QUESTIONS DATABASE ==========
+        const questionsDB = {
+            'math': [
+                {
+                    question: "What is 15 + 27?",
+                    options: ["32", "42", "52", "62"],
+                    correct: 1
+                },
+                {
+                    question: "What is 8 × 7?",
+                    options: ["48", "56", "64", "72"],
+                    correct: 1
+                },
+                {
+                    question: "What is 144 ÷ 12?",
+                    options: ["10", "11", "12", "13"],
+                    correct: 2
+                },
+                {
+                    question: "What is the square root of 81?",
+                    options: ["7", "8", "9", "10"],
+                    correct: 2
+                },
+                {
+                    question: "What is 25% of 200?",
+                    options: ["25", "50", "75", "100"],
+                    correct: 1
+                }
+            ],
+            'science': [
+                {
+                    question: "What is H₂O commonly known as?",
+                    options: ["Oxygen", "Hydrogen", "Water", "Carbon Dioxide"],
+                    correct: 2
+                },
+                {
+                    question: "Which planet is known as the Red Planet?",
+                    options: ["Venus", "Mars", "Jupiter", "Saturn"],
+                    correct: 1
+                },
+                {
+                    question: "What is the chemical symbol for Gold?",
+                    options: ["Go", "Gd", "Au", "Ag"],
+                    correct: 2
+                },
+                {
+                    question: "What is the powerhouse of the cell?",
+                    options: ["Nucleus", "Mitochondria", "Ribosome", "Cell Membrane"],
+                    correct: 1
+                }
+            ],
+            'english': [
+                {
+                    question: "What is the synonym of 'Happy'?",
+                    options: ["Sad", "Joyful", "Angry", "Tired"],
+                    correct: 1
+                },
+                {
+                    question: "Which word is a noun?",
+                    options: ["Run", "Beautiful", "School", "Quickly"],
+                    correct: 2
+                },
+                {
+                    question: "What is the past tense of 'go'?",
+                    options: ["Goed", "Went", "Gone", "Going"],
+                    correct: 1
+                }
+            ],
+            'general': [
+                {
+                    question: "What is the capital of India?",
+                    options: ["Mumbai", "Delhi", "Kolkata", "Chennai"],
+                    correct: 1
+                },
+                {
+                    question: "Who wrote the National Anthem of India?",
+                    options: ["Rabindranath Tagore", "Bankim Chandra", "Mahatma Gandhi", "Jawaharlal Nehru"],
+                    correct: 0
+                },
+                {
+                    question: "Which is the largest ocean?",
+                    options: ["Atlantic", "Indian", "Pacific", "Arctic"],
+                    correct: 2
+                },
+                {
+                    question: "How many continents are there?",
+                    options: ["5", "6", "7", "8"],
+                    correct: 2
+                }
+            ]
+        };
+
+        // Function to get random question
+        function getRandomQuestion() {
+            const subjects = ['math', 'science', 'english', 'general'];
+            const randomSubject = subjects[Math.floor(Math.random() * subjects.length)];
+            const subjectQuestions = questionsDB[randomSubject];
+            return subjectQuestions[Math.floor(Math.random() * subjectQuestions.length)];
+        }
+
+        // ========== MAIN QUIZ LOGIC ==========
+        
+        // Security check
         const user = localStorage.getItem('currentUser');
         if (!user) {
-            // Show error message and redirect
             document.body.innerHTML = `
-                <div class="error-message">
-                    <h2>⚠️ Access Denied</h2>
-                    <p>You must be logged in to take quizzes.</p>
-                    <p>Please <a href="login.html">login</a> or <a href="signup.html">sign up</a> first.</p>
-                    <p>Redirecting to login page in 5 seconds...</p>
+                <div style="text-align: center; padding: 100px; color: white;">
+                    <h2>⚠️ Please Login First</h2>
+                    <p>Redirecting to login page...</p>
                 </div>
             `;
-            
             setTimeout(() => {
                 window.location.href = 'login.html';
-            }, 5000);
-            throw new Error('User not logged in');
+            }, 2000);
         }
         
         // Load photo preview
@@ -253,37 +321,56 @@
         
         // Initialize quiz variables
         const quizType = localStorage.getItem('quizType') || 'mcq';
-        let timeLeft = quizType === 'mcq' ? 60 : 240; // 1 min for MCQ, 4 min for Q&A
+        let timeLeft = quizType === 'mcq' ? 60 : 240;
         let timer;
-        let startTime = new Date();
         let score = 0;
         let quizCompleted = false;
+        let currentQuestion = null;
         
-        // Word counter for Q&A
-        if (quizType === 'qa') {
-            document.getElementById('answer').addEventListener('input', function() {
-                const words = this.value.trim().split(/\s+/).length;
-                document.getElementById('wordCount').textContent = Words: ${words};
-                
-                // Highlight if less than 40 words
-                if (words < 40) {
-                    this.style.borderColor = '#e74c3c';
-                } else {
-                    this.style.borderColor = '#2ecc71';
-                }
-            });
-        }
-        
-        // Show appropriate section
+        // Initialize quiz on page load
         window.onload = function() {
+            if (!user) return;
+            
+            currentQuestion = getRandomQuestion();
+            
             if(quizType === 'mcq') {
                 document.getElementById('mcqSection').style.display = 'block';
+                loadMCQQuestion();
                 startTimer();
             } else {
                 document.getElementById('qaSection').style.display = 'block';
+                loadQAQuestion();
                 startTimer();
+                
+                // Word counter for Q&A
+                document.getElementById('answer').addEventListener('input', function() {
+                    const words = this.value.trim().split(/\s+/).length;
+                    document.getElementById('wordCount').textContent = Words: ${words};
+                });
             }
         };
+        
+        // Load MCQ question
+        function loadMCQQuestion() {
+            document.getElementById('question').textContent = currentQuestion.question;
+            const optionsDiv = document.getElementById('options');
+            optionsDiv.innerHTML = '';
+            
+            currentQuestion.options.forEach((option, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'mcq-option';
+                btn.textContent = ${String.fromCharCode(65 + index)}. ${option};
+                btn.onclick = function() {
+                    checkMCQAnswer(index);
+                };
+                optionsDiv.appendChild(btn);
+            });
+        }
+        
+        // Load QA question
+        function loadQAQuestion() {
+            document.getElementById('qaQuestion').textContent = currentQuestion.question;
+        }
         
         // Timer function
         function startTimer() {
@@ -295,59 +382,43 @@
                 if(timeLeft < 0) {
                     clearInterval(timer);
                     if(quizType === 'mcq') {
-                        endMCQQuiz(false);
+                        endQuiz(false);
                     } else {
                         endQAQuiz(false);
                     }
                 }
-                
-                // Change color when time is running out
-                if(timeLeft < 10) {
-                    timerElement.style.color = '#ff0000';
-                    timerElement.style.animation = 'pulse 0.5s infinite';
-                }
             }, 1000);
         }
         
-        // MCQ Functions
-        function selectAnswer(answer, timeUsed) {
+        // Check MCQ answer
+        function checkMCQAnswer(selectedIndex) {
             if (quizCompleted) return;
             quizCompleted = true;
             
             clearInterval(timer);
-            calculateMCQScore(timeUsed || (60 - timeLeft));
-        }
-        
-        function calculateMCQScore(timeUsed) {
-            let points = 0;
-            let message = '';
+            const timeUsed = 60 - timeLeft;
             
-            if(timeUsed <= 5) {
-                points = 2;
-                message = "🎉 Excellent! 2 Points (Answered in " + timeUsed + " seconds)";
-            } else if(timeUsed <= 60) {
-                points = 1;
-                message = "👍 Good! 1 Point (Answered in " + timeUsed + " seconds)";
+            if (selectedIndex === currentQuestion.correct) {
+                // Correct answer
+                if(timeUsed <= 5) {
+                    score = 2;
+                    showScore("🎉 Excellent! 2 Points (Correct in " + timeUsed + " seconds)");
+                } else if(timeUsed <= 60) {
+                    score = 1;
+                    showScore("👍 Good! 1 Point (Correct in " + timeUsed + " seconds)");
+                }
             } else {
-                points = -1;
-                message = "😔 Time's up! -1 Point";
+                // Wrong answer
+                score = -1;
+                showScore("❌ Wrong answer! -1 Point");
             }
             
-            score = points;
-            
-            // Update user score
-            updateUserScore(points);
-            
-            // Display result
-            document.getElementById('mcqScore').textContent = message;
+            updateUserScore(score);
             document.getElementById('mcqResult').style.display = 'block';
             document.getElementById('options').style.display = 'none';
-            
-            // Clear photo from localStorage
-            localStorage.removeItem('capturedPhoto');
         }
         
-        // Q&A Functions
+        // Submit QA answer
         function submitAnswer() {
             if (quizCompleted) return;
             quizCompleted = true;
@@ -365,47 +436,25 @@
                 return;
             }
             
-            if(answerText.length < 100) {
-                alert("⚠️ Answer seems too short. Please provide a more detailed explanation.");
-                quizCompleted = false;
-                startTimer();
-                return;
-            }
-            
-            calculateQAScore(timeUsed);
-        }
-        
-        function calculateQAScore(timeUsed) {
-            let points = 0;
-            let message = '';
-            
+            // For demo, all QA answers get points based on time
             if(timeUsed <= 60) {
-                points = 8;
-                message = "🏆 Outstanding! 8 Points (Answered in " + timeUsed + " seconds)";
+                score = 8;
+                showQAScore("🏆 Outstanding! 8 Points (Answered in " + timeUsed + " seconds)");
             } else if(timeUsed <= 240) {
-                points = 5;
-                message = "💪 Well done! 5 Points (Answered in " + timeUsed + " seconds)";
+                score = 5;
+                showQAScore("💪 Well done! 5 Points (Answered in " + timeUsed + " seconds)");
             } else {
-                points = -5;
-                message = "⏰ Time's up! -5 Points";
+                score = -5;
+                showQAScore("⏰ Time's up! -5 Points");
             }
             
-            score = points;
-            
-            // Update user score
-            updateUserScore(points);
-            
-            // Display result
-            document.getElementById('qaScore').textContent = message;
+            updateUserScore(score);
             document.getElementById('qaResult').style.display = 'block';
             document.getElementById('answer').style.display = 'none';
             document.querySelector('.submit-btn').style.display = 'none';
-            
-            // Clear photo from localStorage
-            localStorage.removeItem('capturedPhoto');
         }
         
-        function endMCQQuiz(answered) {
+        function endQuiz(answered) {
             if(!answered) {
                 score = -1;
                 document.getElementById('mcqScore').textContent = "⏰ Time's up! -1 Point";
@@ -413,7 +462,6 @@
                 document.getElementById('options').style.display = 'none';
                 
                 updateUserScore(-1);
-                localStorage.removeItem('capturedPhoto');
             }
         }
         
@@ -426,8 +474,15 @@
                 document.querySelector('.submit-btn').style.display = 'none';
                 
                 updateUserScore(-5);
-                localStorage.removeItem('capturedPhoto');
             }
+        }
+        
+        function showScore(message) {
+            document.getElementById('mcqScore').textContent = message;
+        }
+        
+        function showQAScore(message) {
+            document.getElementById('qaScore').textContent = message;
         }
         
         // Update user score in localStorage
@@ -458,19 +513,10 @@
         }
         
         function goHome() {
+            // Clear photo from localStorage
+            localStorage.removeItem('capturedPhoto');
             window.location.href = "index.html";
         }
-        
-        // CSS animation for timer pulse
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes pulse {
-                0% { opacity: 1; }
-                50% { opacity: 0.5; }
-                100% { opacity: 1; }
-            }
-        `;
-        document.head.appendChild(style);
     </script>
 </body>
 </html>
