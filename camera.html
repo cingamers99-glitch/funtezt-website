@@ -141,9 +141,38 @@
             text-decoration: underline;
             font-weight: bold;
         }
+        
+        .photo-preview {
+            max-width: 300px;
+            border-radius: 10px;
+            border: 3px solid white;
+            margin: 20px auto;
+            display: none;
+        }
     </style>
 </head>
 <body>
+    <!-- SECURITY CHECK -->
+    <script>
+        // Check if user is logged in
+        const user = localStorage.getItem('currentUser');
+        if (!user) {
+            // Not logged in - show error
+            document.body.innerHTML = `
+                <div class="error-message">
+                    <h2>⚠️ Access Denied</h2>
+                    <p>You must be logged in to use camera.</p>
+                    <p>Please <a href="login.html">login</a> or <a href="signup.html">sign up</a> first.</p>
+                    <p>Redirecting to login page...</p>
+                </div>
+            `;
+            
+            setTimeout(() => {
+                window.location.href = 'login.html';
+            }, 3000);
+        }
+    </script>
+    
     <a href="index.html" class="back-btn">← Back to Home</a>
     
     <div class="container">
@@ -162,6 +191,8 @@
         
         <button onclick="capturePhoto()">📷 Capture Photo</button>
         
+        <img id="photoPreview" class="photo-preview" alt="Captured Photo">
+        
         <div id="options">
             <h3>📝 Choose Quiz Type:</h3>
             <button class="quiz-option mcq" onclick="startMCQ()">🎯 MCQ Quiz (1 Minute)</button>
@@ -170,29 +201,11 @@
     </div>
 
     <script>
-        // Security check - must be logged in
-        window.onload = function() {
-            const user = localStorage.getItem('currentUser');
-            if (!user) {
-                // Show error message and redirect
-                document.body.innerHTML = `
-                    <div class="error-message">
-                        <h2>⚠️ Access Denied</h2>
-                        <p>You must be logged in to use the camera.</p>
-                        <p>Please <a href="login.html">login</a> or <a href="signup.html">sign up</a> first.</p>
-                        <p>Redirecting to login page in 5 seconds...</p>
-                    </div>
-                `;
-                
-                setTimeout(() => {
-                    window.location.href = 'login.html';
-                }, 5000);
-                return;
-            }
-            
+        // Only run if user is logged in
+        if (user) {
             // Initialize camera
             initCamera();
-        };
+        }
         
         // Initialize camera
         function initCamera() {
@@ -204,7 +217,7 @@
                     video: { 
                         width: { ideal: 500 },
                         height: { ideal: 375 },
-                        facingMode: 'environment' // Use rear camera if available
+                        facingMode: 'environment'
                     } 
                 })
                 .then(stream => {
@@ -219,6 +232,7 @@
                                 <div style="font-size: 50px; margin-bottom: 10px;">📷</div>
                                 <p>Camera access denied or not available</p>
                                 <p>Please allow camera permissions</p>
+                                <button onclick="window.location.href='gallery.html'" style="margin-top: 20px; padding: 10px 20px; background: #3498db; color: white; border: none; border-radius: 5px;">Use Gallery Instead</button>
                             </div>
                         </div>
                     `;
@@ -233,11 +247,12 @@
         function capturePhoto() {
             const video = document.getElementById('camera');
             const optionsDiv = document.getElementById('options');
+            const previewImg = document.getElementById('photoPreview');
             
             // Create canvas to capture photo
             const canvas = document.createElement('canvas');
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
+            canvas.width = video.videoWidth || 500;
+            canvas.height = video.videoHeight || 375;
             const ctx = canvas.getContext('2d');
             
             // Draw video frame to canvas
@@ -251,17 +266,15 @@
                 video.srcObject.getTracks().forEach(track => track.stop());
             }
             
+            // Show preview
+            previewImg.src = capturedPhoto;
+            previewImg.style.display = 'block';
+            
             // Show options
             optionsDiv.style.display = 'block';
             
-            // Show preview
+            // Hide camera
             video.style.display = 'none';
-            
-            // Show preview image
-            const preview = document.createElement('img');
-            preview.src = capturedPhoto;
-            preview.style.cssText = 'max-width: 300px; border-radius: 10px; border: 3px solid white; margin: 20px auto; display: block;';
-            document.getElementById('cameraContainer').appendChild(preview);
             
             alert("✅ Photo captured successfully! Now choose quiz type.");
         }
