@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Take Photo - Funtezt</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: white;
+            padding: 20px;
+        }
+        
+        .back-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            padding: 10px 20px;
+            background: white;
+            color: #333;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+        }
+        
+        .container {
+            max-width: 700px;
+            margin: 80px auto 0;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        
+        h2 {
+            margin-bottom: 20px;
+            font-size: 28px;
+            text-align: center;
+        }
+        
+        #camera {
+            width: 100%;
+            max-width: 500px;
+            border-radius: 15px;
+            border: 5px solid white;
+            margin: 0 auto 20px;
+            display: block;
+            background: black;
+        }
+        
+        .camera-placeholder {
+            width: 500px;
+            height: 375px;
+            border-radius: 15px;
+            border: 5px solid white;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #333;
+            font-size: 20px;
+        }
+        
+        button {
+            padding: 15px 30px;
+            font-size: 18px;
+            background: white;
+            color: #764ba2;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            margin: 10px;
+            font-weight: bold;
+            transition: all 0.3s;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        #options {
+            margin-top: 30px;
+            text-align: center;
+            display: none;
+        }
+        
+        .quiz-option {
+            display: block;
+            width: 80%;
+            max-width: 400px;
+            margin: 15px auto;
+            padding: 20px;
+            background: #4CAF50;
+            color: white;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 20px;
+            border: none;
+        }
+        
+        .quiz-option.mcq {
+            background: #3498db;
+        }
+        
+        .quiz-option.qa {
+            background: #9b59b6;
+        }
+        
+        .instructions {
+            background: rgba(255,255,255,0.2);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+        
+        .error-message {
+            background: rgba(231, 76, 60, 0.9);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            margin: 50px auto;
+            max-width: 500px;
+        }
+        
+        .error-message a {
+            color: white;
+            text-decoration: underline;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="back-btn">← Back to Home</a>
+    
+    <div class="container">
+        <h2>📸 Click Photo of Your Question</h2>
+        
+        <div class="instructions">
+            <p><strong>Instructions:</strong></p>
+            <p>1. Make sure the question is clearly visible</p>
+            <p>2. Good lighting helps in better recognition</p>
+            <p>3. Avoid blurry photos</p>
+        </div>
+        
+        <div id="cameraContainer">
+            <video id="camera" width="500" height="375" autoplay></video>
+        </div>
+        
+        <button onclick="capturePhoto()">📷 Capture Photo</button>
+        
+        <div id="options">
+            <h3>📝 Choose Quiz Type:</h3>
+            <button class="quiz-option mcq" onclick="startMCQ()">🎯 MCQ Quiz (1 Minute)</button>
+            <button class="quiz-option qa" onclick="startQA()">✏️ Question & Answer (4 Minutes)</button>
+        </div>
+    </div>
+
+    <script>
+        // Security check - must be logged in
+        window.onload = function() {
+            const user = localStorage.getItem('currentUser');
+            if (!user) {
+                // Show error message and redirect
+                document.body.innerHTML = `
+                    <div class="error-message">
+                        <h2>⚠️ Access Denied</h2>
+                        <p>You must be logged in to use the camera.</p>
+                        <p>Please <a href="login.html">login</a> or <a href="signup.html">sign up</a> first.</p>
+                        <p>Redirecting to login page in 5 seconds...</p>
+                    </div>
+                `;
+                
+                setTimeout(() => {
+                    window.location.href = 'login.html';
+                }, 5000);
+                return;
+            }
+            
+            // Initialize camera
+            initCamera();
+        };
+        
+        // Initialize camera
+        function initCamera() {
+            const video = document.getElementById('camera');
+            
+            // Request camera access
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        width: { ideal: 500 },
+                        height: { ideal: 375 },
+                        facingMode: 'environment' // Use rear camera if available
+                    } 
+                })
+                .then(stream => {
+                    video.srcObject = stream;
+                    video.play();
+                })
+                .catch(err => {
+                    console.error("Camera error:", err);
+                    document.getElementById('cameraContainer').innerHTML = `
+                        <div class="camera-placeholder">
+                            <div style="text-align: center;">
+                                <div style="font-size: 50px; margin-bottom: 10px;">📷</div>
+                                <p>Camera access denied or not available</p>
+                                <p>Please allow camera permissions</p>
+                            </div>
+                        </div>
+                    `;
+                });
+            } else {
+                alert("Camera not supported in this browser.");
+            }
+        }
+        
+        let capturedPhoto = null;
+        
+        function capturePhoto() {
+            const video = document.getElementById('camera');
+            const optionsDiv = document.getElementById('options');
+            
+            // Create canvas to capture photo
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext('2d');
+            
+            // Draw video frame to canvas
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            // Convert to data URL
+            capturedPhoto = canvas.toDataURL('image/jpeg', 0.8);
+            
+            // Stop camera stream
+            if (video.srcObject) {
+                video.srcObject.getTracks().forEach(track => track.stop());
+            }
+            
+            // Show options
+            optionsDiv.style.display = 'block';
+            
+            // Show preview
+            video.style.display = 'none';
+            
+            // Show preview image
+            const preview = document.createElement('img');
+            preview.src = capturedPhoto;
+            preview.style.cssText = 'max-width: 300px; border-radius: 10px; border: 3px solid white; margin: 20px auto; display: block;';
+            document.getElementById('cameraContainer').appendChild(preview);
+            
+            alert("✅ Photo captured successfully! Now choose quiz type.");
+        }
+        
+        function startMCQ() {
+            if (!capturedPhoto) {
+                alert("Please capture a photo first!");
+                return;
+            }
+            
+            // Save photo and quiz type to localStorage
+            localStorage.setItem('capturedPhoto', capturedPhoto);
+            localStorage.setItem('quizType', 'mcq');
+            
+            // Redirect to quiz page
+            window.location.href = "quiz.html";
+        }
+        
+        function startQA() {
+            if (!capturedPhoto) {
+                alert("Please capture a photo first!");
+                return;
+            }
+            
+            // Save photo and quiz type to localStorage
+            localStorage.setItem('capturedPhoto', capturedPhoto);
+            localStorage.setItem('quizType', 'qa');
+            
+            // Redirect to quiz page
+            window.location.href = "quiz.html";
+        }
+    </script>
+</body>
+</html>

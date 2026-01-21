@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Select from Gallery - Funtezt</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            min-height: 100vh;
+            color: white;
+            padding: 20px;
+        }
+        
+        .back-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            padding: 10px 20px;
+            background: white;
+            color: #333;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+        }
+        
+        .container {
+            max-width: 500px;
+            margin: 80px auto 0;
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            text-align: center;
+        }
+        
+        h2 {
+            margin-bottom: 20px;
+            font-size: 28px;
+        }
+        
+        input[type="file"] {
+            display: none;
+        }
+        
+        .file-label {
+            display: block;
+            padding: 40px;
+            background: white;
+            color: #f5576c;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 20px;
+            margin: 20px 0;
+            border: 3px dashed #f5576c;
+            transition: all 0.3s;
+        }
+        
+        .file-label:hover {
+            background: #f0f0f0;
+            transform: scale(1.02);
+        }
+        
+        button {
+            padding: 15px 30px;
+            font-size: 18px;
+            background: white;
+            color: #f5576c;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            margin: 10px;
+            font-weight: bold;
+            transition: all 0.3s;
+            width: 80%;
+            max-width: 300px;
+        }
+        
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .preview {
+            max-width: 300px;
+            margin: 20px auto;
+            border-radius: 10px;
+            border: 3px solid white;
+            display: none;
+        }
+        
+        #options {
+            margin-top: 30px;
+            display: none;
+        }
+        
+        .quiz-option {
+            display: block;
+            width: 80%;
+            max-width: 300px;
+            margin: 15px auto;
+            padding: 20px;
+            background: #4CAF50;
+            color: white;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 18px;
+            border: none;
+        }
+        
+        .quiz-option.mcq {
+            background: #3498db;
+        }
+        
+        .quiz-option.qa {
+            background: #9b59b6;
+        }
+        
+        .instructions {
+            background: rgba(255,255,255,0.2);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            text-align: left;
+        }
+        
+        .error-message {
+            background: rgba(231, 76, 60, 0.9);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            margin: 50px auto;
+            max-width: 500px;
+        }
+        
+        .error-message a {
+            color: white;
+            text-decoration: underline;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="back-btn">← Back to Home</a>
+    
+    <div class="container">
+        <h2>📁 Select Photo from Gallery</h2>
+        
+        <div class="instructions">
+            <p><strong>Instructions:</strong></p>
+            <p>1. Select a clear photo of your question</p>
+            <p>2. Supported formats: JPG, PNG</p>
+            <p>3. Make sure text is readable</p>
+        </div>
+        
+        <label for="fileInput" class="file-label">
+            📂 Click to Choose Photo<br>
+            <small style="color: #666; font-size: 14px;">or drag and drop</small>
+        </label>
+        <input type="file" id="fileInput" accept="image/*">
+        
+        <img id="previewImage" class="preview" alt="Preview">
+        
+        <div id="options">
+            <h3>Choose Quiz Type:</h3>
+            <button class="quiz-option mcq" onclick="startMCQ()">🎯 MCQ Quiz (1 min)</button>
+            <button class="quiz-option qa" onclick="startQA()">✏️ Q&A (4 min)</button>
+        </div>
+    </div>
+
+    <script>
+        // Security check - must be logged in
+        window.onload = function() {
+            const user = localStorage.getItem('currentUser');
+            if (!user) {
+                // Show error message and redirect
+                document.body.innerHTML = `
+                    <div class="error-message">
+                        <h2>⚠️ Access Denied</h2>
+                        <p>You must be logged in to upload photos.</p>
+                        <p>Please <a href="login.html">login</a> or <a href="signup.html">sign up</a> first.</p>
+                        <p>Redirecting to login page in 5 seconds...</p>
+                    </div>
+                `;
+                
+                setTimeout(() => {
+                    window.location.href = 'login.html';
+                }, 5000);
+                return;
+            }
+        };
+        
+        let selectedPhoto = null;
+        
+        // File input handler
+        document.getElementById('fileInput').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            
+            if (!file) return;
+            
+            // Check file size (max 5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                alert('File size too large! Please select an image under 5MB.');
+                return;
+            }
+            
+            // Check file type
+            if (!file.type.match('image.*')) {
+                alert('Please select an image file (JPG, PNG, etc.)');
+                return;
+            }
+            
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                const preview = document.getElementById('previewImage');
+                preview.src = e.target.result;
+                preview.style.display = 'block';
+                document.getElementById('options').style.display = 'block';
+                
+                // Save to localStorage
+                selectedPhoto = e.target.result;
+                
+                // Show success message
+                alert('✅ Photo selected successfully! Now choose quiz type.');
+            };
+            
+            reader.onerror = function() {
+                alert('Error reading file. Please try again.');
+            };
+            
+            reader.readAsDataURL(file);
+        });
+        
+        // Drag and drop functionality
+        const dropArea = document.querySelector('.file-label');
+        
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, preventDefaults, false);
+        });
+        
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropArea.addEventListener(eventName, highlight, false);
+        });
+        
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, unhighlight, false);
+        });
+        
+        function highlight() {
+            dropArea.style.background = '#f0f0f0';
+            dropArea.style.borderColor = '#3498db';
+        }
+        
+        function unhighlight() {
+            dropArea.style.background = 'white';
+            dropArea.style.borderColor = '#f5576c';
+        }
+        
+        dropArea.addEventListener('drop', handleDrop, false);
+        
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            
+            if (files.length > 0) {
+                document.getElementById('fileInput').files = files;
+                document.getElementById('fileInput').dispatchEvent(new Event('change'));
+            }
+        }
+        
+        function startMCQ() {
+            if (!selectedPhoto) {
+                alert('Please select a photo first!');
+                return;
+            }
+            
+            // Save photo and quiz type to localStorage
+            localStorage.setItem('capturedPhoto', selectedPhoto);
+            localStorage.setItem('quizType', 'mcq');
+            
+            // Redirect to quiz page
+            window.location.href = "quiz.html";
+        }
+        
+        function startQA() {
+            if (!selectedPhoto) {
+                alert('Please select a photo first!');
+                return;
+            }
+            
+            // Save photo and quiz type to localStorage
+            localStorage.setItem('capturedPhoto', selectedPhoto);
+            localStorage.setItem('quizType', 'qa');
+            
+            // Redirect to quiz page
+            window.location.href = "quiz.html";
+        }
+    </script>
+</body>
+</html>
