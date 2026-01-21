@@ -147,9 +147,36 @@
             text-decoration: underline;
             font-weight: bold;
         }
+        
+        .file-info {
+            font-size: 14px;
+            color: rgba(255,255,255,0.8);
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
+    <!-- SECURITY CHECK -->
+    <script>
+        // Check if user is logged in
+        const user = localStorage.getItem('currentUser');
+        if (!user) {
+            // Not logged in - show error
+            document.body.innerHTML = `
+                <div class="error-message">
+                    <h2>⚠️ Access Denied</h2>
+                    <p>You must be logged in to upload photos.</p>
+                    <p>Please <a href="login.html">login</a> or <a href="signup.html">sign up</a> first.</p>
+                    <p>Redirecting to login page...</p>
+                </div>
+            `;
+            
+            setTimeout(() => {
+                window.location.href = 'login.html';
+            }, 3000);
+        }
+    </script>
+    
     <a href="index.html" class="back-btn">← Back to Home</a>
     
     <div class="container">
@@ -160,6 +187,7 @@
             <p>1. Select a clear photo of your question</p>
             <p>2. Supported formats: JPG, PNG</p>
             <p>3. Make sure text is readable</p>
+            <p class="file-info">Max file size: 5MB</p>
         </div>
         
         <label for="fileInput" class="file-label">
@@ -178,108 +206,94 @@
     </div>
 
     <script>
-        // Security check - must be logged in
-        window.onload = function() {
-            const user = localStorage.getItem('currentUser');
-            if (!user) {
-                // Show error message and redirect
-                document.body.innerHTML = `
-                    <div class="error-message">
-                        <h2>⚠️ Access Denied</h2>
-                        <p>You must be logged in to upload photos.</p>
-                        <p>Please <a href="login.html">login</a> or <a href="signup.html">sign up</a> first.</p>
-                        <p>Redirecting to login page in 5 seconds...</p>
-                    </div>
-                `;
-                
-                setTimeout(() => {
-                    window.location.href = 'login.html';
-                }, 5000);
-                return;
-            }
-        };
+        // Only run if user is logged in
+        if (user) {
+            initGallery();
+        }
         
         let selectedPhoto = null;
         
-        // File input handler
-        document.getElementById('fileInput').addEventListener('change', function(event) {
-            const file = event.target.files[0];
+        function initGallery() {
+            // File input handler
+            document.getElementById('fileInput').addEventListener('change', function(event) {
+                const file = event.target.files[0];
+                
+                if (!file) return;
+                
+                // Check file size (max 5MB)
+                if (file.size > 5 * 1024 * 1024) {
+                    alert('File size too large! Please select an image under 5MB.');
+                    return;
+                }
+                
+                // Check file type
+                if (!file.type.match('image.*')) {
+                    alert('Please select an image file (JPG, PNG, etc.)');
+                    return;
+                }
+                
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    const preview = document.getElementById('previewImage');
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                    document.getElementById('options').style.display = 'block';
+                    
+                    // Save to variable
+                    selectedPhoto = e.target.result;
+                    
+                    // Show success message
+                    alert('✅ Photo selected successfully! Now choose quiz type.');
+                };
+                
+                reader.onerror = function() {
+                    alert('Error reading file. Please try again.');
+                };
+                
+                reader.readAsDataURL(file);
+            });
             
-            if (!file) return;
+            // Drag and drop functionality
+            const dropArea = document.querySelector('.file-label');
             
-            // Check file size (max 5MB)
-            if (file.size > 5 * 1024 * 1024) {
-                alert('File size too large! Please select an image under 5MB.');
-                return;
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropArea.addEventListener(eventName, preventDefaults, false);
+            });
+            
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
             }
             
-            // Check file type
-            if (!file.type.match('image.*')) {
-                alert('Please select an image file (JPG, PNG, etc.)');
-                return;
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropArea.addEventListener(eventName, highlight, false);
+            });
+            
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropArea.addEventListener(eventName, unhighlight, false);
+            });
+            
+            function highlight() {
+                dropArea.style.background = '#f0f0f0';
+                dropArea.style.borderColor = '#3498db';
             }
             
-            const reader = new FileReader();
+            function unhighlight() {
+                dropArea.style.background = 'white';
+                dropArea.style.borderColor = '#f5576c';
+            }
             
-            reader.onload = function(e) {
-                const preview = document.getElementById('previewImage');
-                preview.src = e.target.result;
-                preview.style.display = 'block';
-                document.getElementById('options').style.display = 'block';
+            dropArea.addEventListener('drop', handleDrop, false);
+            
+            function handleDrop(e) {
+                const dt = e.dataTransfer;
+                const files = dt.files;
                 
-                // Save to localStorage
-                selectedPhoto = e.target.result;
-                
-                // Show success message
-                alert('✅ Photo selected successfully! Now choose quiz type.');
-            };
-            
-            reader.onerror = function() {
-                alert('Error reading file. Please try again.');
-            };
-            
-            reader.readAsDataURL(file);
-        });
-        
-        // Drag and drop functionality
-        const dropArea = document.querySelector('.file-label');
-        
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            dropArea.addEventListener(eventName, preventDefaults, false);
-        });
-        
-        function preventDefaults(e) {
-            e.preventDefault();
-            e.stopPropagation();
-        }
-        
-        ['dragenter', 'dragover'].forEach(eventName => {
-            dropArea.addEventListener(eventName, highlight, false);
-        });
-        
-        ['dragleave', 'drop'].forEach(eventName => {
-            dropArea.addEventListener(eventName, unhighlight, false);
-        });
-        
-        function highlight() {
-            dropArea.style.background = '#f0f0f0';
-            dropArea.style.borderColor = '#3498db';
-        }
-        
-        function unhighlight() {
-            dropArea.style.background = 'white';
-            dropArea.style.borderColor = '#f5576c';
-        }
-        
-        dropArea.addEventListener('drop', handleDrop, false);
-        
-        function handleDrop(e) {
-            const dt = e.dataTransfer;
-            const files = dt.files;
-            
-            if (files.length > 0) {
-                document.getElementById('fileInput').files = files;
-                document.getElementById('fileInput').dispatchEvent(new Event('change'));
+                if (files.length > 0) {
+                    document.getElementById('fileInput').files = files;
+                    document.getElementById('fileInput').dispatchEvent(new Event('change'));
+                }
             }
         }
         
